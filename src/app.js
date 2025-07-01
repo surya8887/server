@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser"; // corrected typo in import name
-
+import errorMiddleware from "./middlewares/error.middleware.js";
 const app = express();
 
 // Middleware
@@ -26,4 +26,6 @@ app.get("/", (req, res) => {
 
 // TODO: Define more API endpoints here
 
+
+app.use(errorMiddleware)
 export default app;
