@@ -23,6 +23,8 @@ const getUsersForSidebar = asyncHandler(async (req, res, next) => {
 const getMessage = asyncHandler(async (req, res, next) => {
   const { id: userToChatId } = req.params;
   const myId = req.user._id;
+  console.log(myId);
+  
 
   const messages = await Message.find({
     $or: [
@@ -45,6 +47,10 @@ const sendMessage = asyncHandler(async (req, res, next) => {
   const { id: receiverId } = req.params;
   const senderId = req.user._id;
 
+  if (!text && !image) {
+    return next(new ApiError(400, "Message cannot be empty"));
+  }
+
   let imageUrl = "";
 
   if (image) {
@@ -59,16 +65,18 @@ const sendMessage = asyncHandler(async (req, res, next) => {
   const message = await Message.create({
     senderId,
     receiverId,
-    text,
+    text: text?.trim() || "",
     image: imageUrl,
   });
 
   if (!message) {
     return next(new ApiError(500, "Message creation failed"));
   }
+
   return res
     .status(201)
     .json(new ApiResponse(201, "Message sent successfully", message));
 });
+
 
 export { getUsersForSidebar, getMessage,sendMessage };
