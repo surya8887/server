@@ -21,11 +21,23 @@ app.get("/", (req, res) => {
 });
 
 // TODO: Import routes
-// import userRoutes from './routes/user.routes.js';
-// app.use('/api/users', userRoutes);
+import userRoutes from "./routes/user.route.js";
+app.use('/api/v1/users', userRoutes);
 
 // TODO: Define more API endpoints here
 
 
-app.use(errorMiddleware)
+// Last middleware in the stack
+app.use(errorMiddleware);
+
+// Optional final handler (sends the formatted error)
+app.use((err, req, res, next) => {
+  const { statusCode = 500, formattedError } = err;
+
+  res.status(statusCode).json(formattedError || {
+    success: false,
+    message: "Unhandled error",
+  });
+});
+
 export default app;

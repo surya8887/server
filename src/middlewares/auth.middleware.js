@@ -3,30 +3,30 @@ import ApiError from "../utils/ApiError.js";
 import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 
-const verifyJwt = asyncHandler(async (req, res, next) => {
-  const authHeader = req.header("Authorization");
+const jwtVerify = asyncHandler(async (req, res, next) => {
+  const token =
+    req.cookies?.accessToken ||
+    req.header("Authorization")?.replace("Bearer ", "");
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return next(new ApiError(401, "Unauthorized: No token provided"));
+  if (!token) {
+    return next(new ApiError(401, "Access denied. No token provided."));
   }
-
-  const token = authHeader.split(" ")[1];
 
   let decoded;
   try {
     decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
   } catch (err) {
-    return next(new ApiError(401, "Invalid or expired token"));
+    return next(new ApiError(401, "Invalid or expired token."));
   }
 
   const user = await User.findById(decoded._id).select("-password -refreshToken");
 
   if (!user) {
-    return next(new ApiError(401, "User not found"));
+    return next(new ApiError(401, "User not found."));
   }
 
-  req.user = user;
+  req.user = user; 
   next();
 });
 
-export default verifyJwt;
+export default jwtVerify;

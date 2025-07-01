@@ -3,6 +3,7 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import User from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { json } from "express";
 
 // 🔐 Token generator
 const generateAccessAndRefreshToken = async (userId) => {
@@ -41,16 +42,16 @@ const SignUp = asyncHandler(async (req, res, next) => {
   const { name, email, password } = req.body;
 
   if (!name || !email || !password) {
-    throw new ApiError(400, "Please provide all fields");
+    return next(new ApiError(400, "Please provide all fields", true));
   }
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    throw new ApiError(400, "Email already exists");
+    return next(new ApiError(400, "Email already exists", true));
   }
 
   const user = await User.create({ name, email, password });
-  if (!user) throw new ApiError(500, "Failed to create user");
+  if (!user) return next(new ApiError(500, "Failed to create user", true));
 
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
     user._id
@@ -67,18 +68,58 @@ const SignUp = asyncHandler(async (req, res, next) => {
 });
 
 //  📝 Login controller
-const Login = asyncHandler(async (req, res, next) => {});
+const Login = asyncHandler(async (req, res, next) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return next(
+      new ApiError(400, "Please provide both email and password", true)
+    );
+  }
+
+  const user = await User.findOne({ email });
+  if (!user)
+    return next(new ApiError(400, "Username or email already exists", true));
+  const isValidPassword = await user.comparePassword(password);
+  if (!isValidPassword)
+    return next(new ApiError(401, "Invalid email or password", true));
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
+
+  // console.log(accessToken);
+
+  setTokenCookies(res, accessToken, refreshToken); // ✅
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Login successful", user.name));
+});
 
 //  📝 Logout controller
 
-const Logout = asyncHandler(async (req, res, next) => {});
+const Logout = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id;
+  // console.log(userId);
+  
+  if (!userId) return next(new ApiError(401, "Unauthorized", true));
+
+  await User.findByIdAndUpdate(userId, { refreshToken: null });
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+  };
+
+  res
+    .clearCookie("accessToken", cookieOptions)
+    .clearCookie("refreshToken", cookieOptions);
+
+  return res.json(new ApiResponse(200, "User logged out successfully", null));
+});
 
 //  📝 UpdateProfile controller
 
-const UpdateProfile = asyncHandler(async (req, res, next) => {
-
-
-    
-});
+const UpdateProfile = asyncHandler(async (req, res, next) => {});
 
 export { SignUp, Login, Logout, UpdateProfile };
