@@ -3,7 +3,8 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import User from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { json } from "express";
+
+
 
 // 🔐 Token generator
 const generateAccessAndRefreshToken = async (userId) => {
@@ -24,6 +25,8 @@ const generateAccessAndRefreshToken = async (userId) => {
   }
 };
 
+
+
 // 🍪 Set tokens in cookies
 const setTokenCookies = (res, accessToken, refreshToken) => {
   const cookieOptions = {
@@ -36,6 +39,8 @@ const setTokenCookies = (res, accessToken, refreshToken) => {
   res.cookie("accessToken", accessToken, cookieOptions);
   res.cookie("refreshToken", refreshToken, cookieOptions);
 };
+
+
 
 // 🧾 Signup controller
 const SignUp = asyncHandler(async (req, res, next) => {
@@ -96,11 +101,10 @@ const Login = asyncHandler(async (req, res, next) => {
 });
 
 //  📝 Logout controller
-
 const Logout = asyncHandler(async (req, res, next) => {
   const userId = req.user._id;
   // console.log(userId);
-  
+
   if (!userId) return next(new ApiError(401, "Unauthorized", true));
 
   await User.findByIdAndUpdate(userId, { refreshToken: null });
@@ -119,7 +123,34 @@ const Logout = asyncHandler(async (req, res, next) => {
 });
 
 //  📝 UpdateProfile controller
+const UpdateProfile = asyncHandler(async (req, res, next) => {
+  const userId = req.user?._id;
 
-const UpdateProfile = asyncHandler(async (req, res, next) => {});
+  if (!userId) return next(new ApiError(401, "Unauthorized", true));
+
+  const user = await User.findById(userId);
+  if (!user) return next(new ApiError(404, "User not found", true));
+
+ const avatar = req.file?.path;
+
+  if (!avatar) return next(new ApiError(400, "Avatar is required", true));
+
+  // Update fields
+  user.name = req.body.name || user.name;
+  user.email = req.body.email || user.email;
+  user.avatar = avatar;
+
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Profile updated successfully",
+    data: {
+      name: user.name,
+      avatar: user.avatar,
+    },
+  });
+});
+
 
 export { SignUp, Login, Logout, UpdateProfile };
