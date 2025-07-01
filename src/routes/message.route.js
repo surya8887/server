@@ -6,7 +6,7 @@ const router = Router();
 
 
 
-router.route('/').get(jwtVerify,getUsersForSidebar)
+router.route('/users').get(jwtVerify,getUsersForSidebar)
 router.route('/:id').get(jwtVerify,getMessage)
 
 
