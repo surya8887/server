@@ -23,7 +23,9 @@ app.get("/", (req, res) => {
 
 // TODO: Import routes
 import userRoutes from "./routes/user.route.js";
+import messageRoutes from "./routes/message.route.js";
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/messages', messageRoutes);
 
 // TODO: Define more API endpoints here
 
